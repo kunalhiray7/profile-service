@@ -4,6 +4,7 @@ import com.coffeewithme.profileservice.domain.Gender
 import com.coffeewithme.profileservice.dtos.ProfileRequest
 import com.coffeewithme.profileservice.serializers.DateTimeDeserializer
 import com.coffeewithme.profileservice.serializers.DateTimeSerializer
+import com.coffeewithme.profileservice.services.ProfileService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -11,6 +12,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.Mockito.*
 import org.mockito.junit.MockitoJUnitRunner
 import org.springframework.http.MediaType
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
@@ -18,12 +21,15 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import java.time.Instant
+import java.time.LocalDate
 
 @RunWith(MockitoJUnitRunner::class)
 internal class ProfileControllerTest {
 
     private lateinit var mockMvc: MockMvc
+
+    @Mock
+    private lateinit var profileService: ProfileService
 
     @InjectMocks
     private lateinit var profileController: ProfileController
@@ -44,7 +50,7 @@ internal class ProfileControllerTest {
                 realName = "John Smith",
                 displayName = "John",
                 gender = Gender.MALE,
-                dateOfBirth = Instant.now(),
+                dateOfBirth = LocalDate.now(),
                 maritalStatus = "Single",
                 profilePic = "http://123.png",
                 ethnicity = "Asian",
@@ -54,6 +60,8 @@ internal class ProfileControllerTest {
                 occupation = "Banker",
                 aboutMe = "Banker by profession, musician by passion"
         )
+        val domainProfile = profileRequest.toDomain()
+        doReturn(domainProfile).`when`(profileService).create(profileRequest)
 
         // when
         mockMvc.perform(
@@ -62,15 +70,17 @@ internal class ProfileControllerTest {
                         .content(mapper.writeValueAsString(profileRequest))
         ) // then
                 .andExpect(MockMvcResultMatchers.status().isCreated)
-                .andExpect(MockMvcResultMatchers.content().string(mapper.writeValueAsString(profileRequest)))
+                .andExpect(MockMvcResultMatchers.content().string(mapper.writeValueAsString(domainProfile)))
+
+        verify(profileService, times(1)).create(profileRequest)
 
     }
 
     private fun getObjectMapper(): ObjectMapper {
         val objectMapper = ObjectMapper()
         val javaTimeModule = JavaTimeModule()
-        javaTimeModule.addSerializer(Instant::class.java, DateTimeSerializer())
-        javaTimeModule.addDeserializer(Instant::class.java, DateTimeDeserializer())
+        javaTimeModule.addSerializer(LocalDate::class.java, DateTimeSerializer())
+        javaTimeModule.addDeserializer(LocalDate::class.java, DateTimeDeserializer())
         objectMapper.registerModule(javaTimeModule)
         objectMapper.registerModule(KotlinModule())
 
