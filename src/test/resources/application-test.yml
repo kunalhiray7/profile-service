@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: profile-service
+  data:
+    mongodb:
+      uri: mongodb://127.0.0.1:27017/coffeewithme
+
+# Actuator
+management:
+  health:
+    mongo:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
+  info:
+    defaults:
+      enabled: true
+    git:
+      mode: full
