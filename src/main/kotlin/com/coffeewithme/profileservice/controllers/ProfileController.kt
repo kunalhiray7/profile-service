@@ -14,4 +14,7 @@ class ProfileController(val profileService: ProfileService) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@RequestBody @Valid profileRequest: ProfileRequest): Profile = profileService.create(profileRequest)
+
+    @GetMapping("/{id}")
+    fun getById(@PathVariable("id") id: String): Profile = profileService.getById(id)
 }

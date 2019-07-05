@@ -1,8 +1,10 @@
 package com.coffeewithme.profileservice.controllers
 
 import com.coffeewithme.profileservice.domain.Gender
+import com.coffeewithme.profileservice.domain.Profile
 import com.coffeewithme.profileservice.dtos.ProfileRequest
 import com.coffeewithme.profileservice.exceptions.ProfileAlreadyExistsException
+import com.coffeewithme.profileservice.exceptions.ProfileNotFoundException
 import com.coffeewithme.profileservice.services.ProfileService
 import com.coffeewithme.profileservice.utils.ObjectMapperUtil.Companion.getObjectMapper
 import org.junit.Before
@@ -107,6 +109,56 @@ internal class ProfileControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isConflict)
 
         verify(profileService, times(1)).create(profileRequest)
+        verifyNoMoreInteractions(profileService)
+    }
+
+    @Test
+    fun `GET by id should return profile for given id`() {
+        // given
+        val id = "5d1e4a25ba52df864cc09028"
+        val profile = Profile(
+                id = id,
+                email = "john.smith@gmail.com",
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        doReturn(profile).`when`(profileService).getById(id)
+
+        // when
+        mockMvc.perform(MockMvcRequestBuilders.get("/profiles/$id"))
+                // then
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.content().string(mapper.writeValueAsString(profile)))
+
+        verify(profileService, times(1)).getById(id)
+        verifyNoMoreInteractions(profileService)
+    }
+
+    @Test
+    fun `GET by id should return 404 when no profile found for given id`() {
+        // given
+        val id = "5d1e4a25ba52df864cc09028"
+        doThrow(ProfileNotFoundException("Profile not found")).`when`(profileService).getById(id)
+
+        // when
+        mockMvc.perform(MockMvcRequestBuilders.get("/profiles/$id"))
+                // then
+                .andExpect(MockMvcResultMatchers.status().isNotFound)
+
+        verify(profileService, times(1)).getById(id)
+        verifyNoMoreInteractions(profileService)
     }
 
     private fun jacksonDateTimeConverter(): MappingJackson2HttpMessageConverter {
