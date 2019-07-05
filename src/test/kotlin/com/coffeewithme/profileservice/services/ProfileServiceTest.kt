@@ -2,7 +2,9 @@ package com.coffeewithme.profileservice.services
 
 import com.coffeewithme.profileservice.domain.Gender
 import com.coffeewithme.profileservice.domain.Profile
+import com.coffeewithme.profileservice.dtos.AuthRequest
 import com.coffeewithme.profileservice.dtos.ProfileRequest
+import com.coffeewithme.profileservice.exceptions.NotAuthenticatedException
 import com.coffeewithme.profileservice.exceptions.ProfileAlreadyExistsException
 import com.coffeewithme.profileservice.exceptions.ProfileNotFoundException
 import com.coffeewithme.profileservice.repositories.ProfileRepository
@@ -147,6 +149,60 @@ internal class ProfileServiceTest {
 
         // then
         verify(profileRepository, times(1)).findById(id)
+        verifyNoMoreInteractions(profileRepository)
+    }
+
+    @Test
+    fun `authenticate() should authenticate user and return profile`() {
+        // given
+        val email = "john.smith@gmail.com"
+        val profile = Profile(
+                id = "5d1e4a25ba52df864cc09028",
+                email = email,
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val authRequest = AuthRequest(username = email)
+        doReturn(profile).`when`(profileRepository).findByEmail(email)
+
+        // when
+        val result = profileService.authenticate(authRequest)
+
+        // then
+        assertEquals(profile, result)
+        verify(profileRepository, times(1)).findByEmail(email)
+        verifyNoMoreInteractions(profileRepository)
+    }
+
+    @Test
+    fun `authenticate() should throw NotAuthenticatedException when user is not authorized`() {
+        // given
+        val email = "john.smith@gmail.com"
+        val authRequest = AuthRequest(username = email)
+        doReturn(null).`when`(profileRepository).findByEmail(email)
+
+        // when
+        try {
+            profileService.authenticate(authRequest)
+            fail()
+        } catch (e: NotAuthenticatedException) {
+            assertEquals("User with username ${authRequest.username} is not authorized.", e.message)
+        }
+
+        // then
+        verify(profileRepository, times(1)).findByEmail(email)
         verifyNoMoreInteractions(profileRepository)
     }
 }

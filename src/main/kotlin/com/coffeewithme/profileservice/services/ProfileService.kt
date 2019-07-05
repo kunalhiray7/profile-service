@@ -1,7 +1,9 @@
 package com.coffeewithme.profileservice.services
 
 import com.coffeewithme.profileservice.domain.Profile
+import com.coffeewithme.profileservice.dtos.AuthRequest
 import com.coffeewithme.profileservice.dtos.ProfileRequest
+import com.coffeewithme.profileservice.exceptions.NotAuthenticatedException
 import com.coffeewithme.profileservice.exceptions.ProfileAlreadyExistsException
 import com.coffeewithme.profileservice.exceptions.ProfileNotFoundException
 import com.coffeewithme.profileservice.repositories.ProfileRepository
@@ -18,12 +20,18 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
     @Throws(ProfileNotFoundException::class)
     fun getById(id: String): Profile {
-        return profileRepository.findById(id).orElseThrow {ProfileNotFoundException("Profile with id $id does not exist.")}
+        return profileRepository.findById(id).orElseThrow { ProfileNotFoundException("Profile with id $id does not exist.") }
+    }
+
+    @Throws(NotAuthenticatedException::class)
+    fun authenticate(authRequest: AuthRequest): Profile {
+        return profileRepository.findByEmail(authRequest.username)
+                ?: throw NotAuthenticatedException("User with username ${authRequest.username} is not authorized.")
     }
 
     private fun validateProfile(profileRequest: ProfileRequest) {
         val potentialProfile = profileRepository.findByEmail(profileRequest.email)
-        if(potentialProfile != null) {
+        if (potentialProfile != null) {
             throw ProfileAlreadyExistsException("Profile with email ${profileRequest.email} already exists.")
         }
     }
