@@ -5,4 +5,6 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ProfileRepository: MongoRepository<Profile, String>
+interface ProfileRepository: MongoRepository<Profile, String> {
+    fun findByEmail(email: String): Profile?
+}

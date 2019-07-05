@@ -2,6 +2,7 @@ package com.coffeewithme.profileservice.dtos
 
 import com.coffeewithme.profileservice.domain.Gender
 import com.coffeewithme.profileservice.domain.Profile
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint
 import java.time.LocalDate
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
@@ -38,7 +39,13 @@ data class ProfileRequest(
 
         val occupation: String = "",
 
-        val aboutMe: String = ""
+        val aboutMe: String = "",
+
+        @get: NotBlank
+        val city: String = "",
+
+        @get: NotNull
+        val location: GeoJsonPoint = GeoJsonPoint(52.46510, 13.39630)
 
 ) {
     fun toDomain() = Profile(
@@ -55,6 +62,8 @@ data class ProfileRequest(
             height = this.height,
             figure = this.figure,
             occupation = this.occupation,
-            aboutMe = this.aboutMe
+            aboutMe = this.aboutMe,
+            city = this.city,
+            location = this.location
     )
 }

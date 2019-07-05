@@ -2,12 +2,9 @@ package com.coffeewithme.profileservice.controllers
 
 import com.coffeewithme.profileservice.domain.Gender
 import com.coffeewithme.profileservice.dtos.ProfileRequest
-import com.coffeewithme.profileservice.serializers.DateTimeDeserializer
-import com.coffeewithme.profileservice.serializers.DateTimeSerializer
+import com.coffeewithme.profileservice.exceptions.ProfileAlreadyExistsException
 import com.coffeewithme.profileservice.services.ProfileService
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.coffeewithme.profileservice.utils.ObjectMapperUtil.Companion.getObjectMapper
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,6 +12,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.junit.MockitoJUnitRunner
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint
 import org.springframework.http.MediaType
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.test.web.servlet.MockMvc
@@ -58,7 +56,9 @@ internal class ProfileControllerTest {
                 height = 173,
                 figure = "Normal",
                 occupation = "Banker",
-                aboutMe = "Banker by profession, musician by passion"
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
         )
         val domainProfile = profileRequest.toDomain()
         doReturn(domainProfile).`when`(profileService).create(profileRequest)
@@ -76,20 +76,42 @@ internal class ProfileControllerTest {
 
     }
 
-    private fun getObjectMapper(): ObjectMapper {
-        val objectMapper = ObjectMapper()
-        val javaTimeModule = JavaTimeModule()
-        javaTimeModule.addSerializer(LocalDate::class.java, DateTimeSerializer())
-        javaTimeModule.addDeserializer(LocalDate::class.java, DateTimeDeserializer())
-        objectMapper.registerModule(javaTimeModule)
-        objectMapper.registerModule(KotlinModule())
+    @Test
+    fun `POST should return 409 when tried to create profile with already existing user`() {
+        // given
+        val profileRequest = ProfileRequest(
+                email = "john.smith@gmail.com",
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        doThrow(ProfileAlreadyExistsException("Profile with this email already exists")).`when`(profileService).create(profileRequest)
 
-        return objectMapper
+        // when
+        mockMvc.perform(
+                MockMvcRequestBuilders.post("/profiles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(profileRequest))
+        ) // then
+                .andExpect(MockMvcResultMatchers.status().isConflict)
+
+        verify(profileService, times(1)).create(profileRequest)
     }
 
     private fun jacksonDateTimeConverter(): MappingJackson2HttpMessageConverter {
         val converter = MappingJackson2HttpMessageConverter()
-        converter.objectMapper = getObjectMapper()
+        converter.objectMapper = this.mapper
         return converter
     }
 

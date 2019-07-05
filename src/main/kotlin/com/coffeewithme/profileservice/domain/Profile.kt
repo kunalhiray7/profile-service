@@ -1,6 +1,7 @@
 package com.coffeewithme.profileservice.domain
 
 import org.springframework.data.annotation.Id
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDate
 import javax.validation.constraints.NotBlank
@@ -41,5 +42,11 @@ data class Profile(
 
         val occupation: String = "",
 
-        val aboutMe: String = ""
+        val aboutMe: String = "",
+
+        @get: NotBlank
+        val city: String = "",
+
+        @get: NotNull
+        val location: GeoJsonPoint
 )

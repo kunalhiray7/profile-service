@@ -28,6 +28,10 @@ dependencies {
 	implementation("io.springfox:springfox-swagger-ui:2.9.2")
 	implementation("io.springfox:springfox-swagger2:2.9.2")
 
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+")
+	implementation("com.fasterxml.jackson.core:jackson-databind:2.9.7")
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.7")
+
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }
