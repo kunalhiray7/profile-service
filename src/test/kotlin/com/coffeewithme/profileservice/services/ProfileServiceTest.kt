@@ -7,7 +7,9 @@ import com.coffeewithme.profileservice.dtos.ProfileRequest
 import com.coffeewithme.profileservice.exceptions.NotAuthenticatedException
 import com.coffeewithme.profileservice.exceptions.ProfileAlreadyExistsException
 import com.coffeewithme.profileservice.exceptions.ProfileNotFoundException
+import com.coffeewithme.profileservice.exceptions.UnableToUpdateException
 import com.coffeewithme.profileservice.repositories.ProfileRepository
+import com.coffeewithme.profileservice.utils.JsonPatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Test
@@ -25,6 +27,9 @@ internal class ProfileServiceTest {
 
     @Mock
     private lateinit var profileRepository: ProfileRepository
+
+    @Mock
+    private lateinit var jsonPatcher: JsonPatcher
 
     @InjectMocks
     private lateinit var profileService: ProfileService
@@ -203,6 +208,115 @@ internal class ProfileServiceTest {
 
         // then
         verify(profileRepository, times(1)).findByEmail(email)
+        verifyNoMoreInteractions(profileRepository)
+    }
+
+    @Test
+    fun `update() should update the profile with partial data`() {
+        // given
+        val displayName = "John Snow"
+        val realName = "Aegon Targaryen"
+        val patchRequest = """[{ "op": "replace", "path": "/displayName", "value": $displayName },
+            |{ "op": "replace", "path": "/realName", "value": $realName }]""".trimMargin()
+        val id = "5d1e4a25ba52df864cc09028"
+        val profile = Profile(
+                id = id,
+                email = "john.snow@gmail.com",
+                realName = "John Snow",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val updatedProfile = profile.copy(displayName = displayName, realName = realName)
+        doReturn(Optional.of(profile)).`when`(profileRepository).findById(id)
+        doReturn(updatedProfile).`when`(jsonPatcher).patch(patchRequest, profile)
+        doReturn(updatedProfile).`when`(profileRepository).save(updatedProfile)
+
+        // when
+        val result = profileService.update(patchRequest, id)
+
+        // then
+        assertEquals(updatedProfile, result)
+        verify(profileRepository, times(1)).findById(id)
+        verify(jsonPatcher, times(1)).patch(patchRequest, profile)
+        verify(profileRepository, times(1)).save(updatedProfile)
+        verifyNoMoreInteractions(profileRepository)
+    }
+
+    @Test
+    fun `update() should throw ProfileNotFoundException when no profile found with given id`() {
+        // given
+        val displayName = "John Snow"
+        val realName = "Aegon Targaryen"
+        val patchRequest = """[{ "op": "replace", "path": "/displayName", "value": $displayName },
+            |{ "op": "replace", "path": "/realName", "value": $realName }]""".trimMargin()
+        val id = "5d1e4a25ba52df864cc09028"
+        doReturn(Optional.ofNullable(null)).`when`(profileRepository).findById(id)
+
+        // when
+        try {
+            profileService.update(patchRequest, id)
+            fail()
+        } catch (e: ProfileNotFoundException) {
+            assertEquals("Profile with id $id does not exist.", e.message)
+        }
+
+        // then
+        verify(profileRepository, times(1)).findById(id)
+        verifyNoMoreInteractions(profileRepository)
+    }
+
+    @Test
+    fun `update() should throw UnableToUpdateException when tried to update non-editable field`() {
+        // given
+        val updatedId = "5d1e4a25ba52df864cc09356"
+        val updatedEmail = "abc@xyz.com"
+        val patchRequest = """[{ "op": "replace", "path": "/id", "value": $updatedId },
+            |{ "op": "replace", "path": "/email", "value": $updatedEmail }]""".trimMargin()
+        val id = "5d1e4a25ba52df864cc09028"
+        val profile = Profile(
+                id = id,
+                email = "john.snow@gmail.com",
+                realName = "John Snow",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val updatedProfile = profile.copy(id = updatedId, email = updatedEmail)
+        doReturn(Optional.of(profile)).`when`(profileRepository).findById(id)
+        doReturn(updatedProfile).`when`(jsonPatcher).patch(patchRequest, profile)
+
+        // when
+        try {
+            profileService.update(patchRequest, id)
+            fail()
+        } catch (e: UnableToUpdateException) {
+            assertEquals("Email and ID are not allowed to be updated", e.message)
+        }
+
+        // then
+        verify(profileRepository, times(1)).findById(id)
+        verify(jsonPatcher, times(1)).patch(patchRequest, profile)
         verifyNoMoreInteractions(profileRepository)
     }
 }

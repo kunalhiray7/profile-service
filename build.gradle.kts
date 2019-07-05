@@ -31,6 +31,7 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+")
 	implementation("com.fasterxml.jackson.core:jackson-databind:2.9.7")
 	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.7")
+	implementation("com.github.fge:json-patch:1.9")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")

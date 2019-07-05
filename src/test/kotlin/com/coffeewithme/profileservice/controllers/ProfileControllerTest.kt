@@ -5,42 +5,35 @@ import com.coffeewithme.profileservice.domain.Profile
 import com.coffeewithme.profileservice.dtos.ProfileRequest
 import com.coffeewithme.profileservice.exceptions.ProfileAlreadyExistsException
 import com.coffeewithme.profileservice.exceptions.ProfileNotFoundException
+import com.coffeewithme.profileservice.exceptions.UnableToUpdateException
 import com.coffeewithme.profileservice.services.ProfileService
 import com.coffeewithme.profileservice.utils.ObjectMapperUtil.Companion.getObjectMapper
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.InjectMocks
-import org.mockito.Mock
 import org.mockito.Mockito.*
-import org.mockito.junit.MockitoJUnitRunner
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint
 import org.springframework.http.MediaType
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
 
-@RunWith(MockitoJUnitRunner::class)
+@RunWith(SpringRunner::class)
+@WebMvcTest(ProfileController::class)
 internal class ProfileControllerTest {
 
+    @Autowired
     private lateinit var mockMvc: MockMvc
 
-    @Mock
+    @MockBean
     private lateinit var profileService: ProfileService
 
-    @InjectMocks
-    private lateinit var profileController: ProfileController
-
     private val mapper = getObjectMapper()
-
-    @Before
-    fun setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(profileController)
-                .setMessageConverters(jacksonDateTimeConverter()).build()
-    }
 
     @Test
     fun `POST should create a profile and return 201`() {
@@ -67,12 +60,12 @@ internal class ProfileControllerTest {
 
         // when
         mockMvc.perform(
-                MockMvcRequestBuilders.post("/profiles")
+                post("/profiles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(profileRequest))
         ) // then
-                .andExpect(MockMvcResultMatchers.status().isCreated)
-                .andExpect(MockMvcResultMatchers.content().string(mapper.writeValueAsString(domainProfile)))
+                .andExpect(status().isCreated)
+                .andExpect(content().string(mapper.writeValueAsString(domainProfile)))
 
         verify(profileService, times(1)).create(profileRequest)
 
@@ -102,11 +95,11 @@ internal class ProfileControllerTest {
 
         // when
         mockMvc.perform(
-                MockMvcRequestBuilders.post("/profiles")
+                post("/profiles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(profileRequest))
         ) // then
-                .andExpect(MockMvcResultMatchers.status().isConflict)
+                .andExpect(status().isConflict)
 
         verify(profileService, times(1)).create(profileRequest)
         verifyNoMoreInteractions(profileService)
@@ -137,10 +130,10 @@ internal class ProfileControllerTest {
         doReturn(profile).`when`(profileService).getById(id)
 
         // when
-        mockMvc.perform(MockMvcRequestBuilders.get("/profiles/$id"))
+        mockMvc.perform(get("/profiles/$id"))
                 // then
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.content().string(mapper.writeValueAsString(profile)))
+                .andExpect(status().isOk)
+                .andExpect(content().string(mapper.writeValueAsString(profile)))
 
         verify(profileService, times(1)).getById(id)
         verifyNoMoreInteractions(profileService)
@@ -153,18 +146,89 @@ internal class ProfileControllerTest {
         doThrow(ProfileNotFoundException("Profile not found")).`when`(profileService).getById(id)
 
         // when
-        mockMvc.perform(MockMvcRequestBuilders.get("/profiles/$id"))
+        mockMvc.perform(get("/profiles/$id"))
                 // then
-                .andExpect(MockMvcResultMatchers.status().isNotFound)
+                .andExpect(status().isNotFound)
 
         verify(profileService, times(1)).getById(id)
         verifyNoMoreInteractions(profileService)
     }
 
-    private fun jacksonDateTimeConverter(): MappingJackson2HttpMessageConverter {
-        val converter = MappingJackson2HttpMessageConverter()
-        converter.objectMapper = this.mapper
-        return converter
+    @Test
+    fun `PATCH should return updated profile`() {
+        // given
+        val patchRequest = """[{ "op": "replace", "path": "/displayName", "value": "John Snow" },
+            |{ "op": "replace", "path": "/realName", "value": "Aegon Targeryen" }]""".trimMargin()
+
+        val id = "5d1e4a25ba52df864cc09028"
+        val updatedProfile = Profile(
+                id = id,
+                email = "john.snow@gmail.com",
+                realName = "Aegon Targaryen",
+                displayName = "John Snow",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        doReturn(updatedProfile).`when`(profileService).update(patchRequest, id)
+
+        // when
+        mockMvc.perform(
+                patch("/profiles/$id")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchRequest))
+                .andExpect(status().isOk)
+                .andExpect(content().string(mapper.writeValueAsString(updatedProfile)))
+
+        verify(profileService, times(1)).update(patchRequest, id)
+        verifyNoMoreInteractions(profileService)
+    }
+
+    @Test
+    fun `PATCH should return 404 when profile not found for given id`() {
+        // given
+        val id = "5d1e4a25ba52df864cc09028"
+        val patchRequest = """[{ "op": "replace", "path": "/displayName", "value": "John Snow" },
+            |{ "op": "replace", "path": "/realName", "value": "Aegon Targeryen" }]""".trimMargin()
+        doThrow(ProfileNotFoundException("Profile not found")).`when`(profileService).update(patchRequest, id)
+
+        // when
+        mockMvc.perform(
+                patch("/profiles/$id")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchRequest))
+                .andExpect(status().isNotFound)
+
+        verify(profileService, times(1)).update(patchRequest, id)
+        verifyNoMoreInteractions(profileService)
+    }
+
+    @Test
+    fun `PATCH should return 409 when profile cannot be updated`() {
+        // given
+        val id = "5d1e4a25ba52df864cc09028"
+        val patchRequest = """[{ "op": "replace", "path": "/id", "value": "5d1e4a25ba52df864cc09065" },
+            |{ "op": "replace", "path": "/email", "value": "aagon@Targeryen.com" }]""".trimMargin()
+        doThrow(UnableToUpdateException("Profile cannot be updated")).`when`(profileService).update(patchRequest, id)
+
+        // when
+        mockMvc.perform(
+                patch("/profiles/$id")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchRequest))
+                .andExpect(status().isConflict)
+
+        verify(profileService, times(1)).update(patchRequest, id)
+        verifyNoMoreInteractions(profileService)
     }
 
 }

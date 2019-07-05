@@ -17,4 +17,9 @@ class ProfileController(val profileService: ProfileService) {
 
     @GetMapping("/{id}")
     fun getById(@PathVariable("id") id: String): Profile = profileService.getById(id)
+
+    @PatchMapping("/{id}")
+    fun update(@PathVariable("id") id: String, @RequestBody patchRequest: String): Profile {
+        return profileService.update(patchRequest, id)
+    }
 }
