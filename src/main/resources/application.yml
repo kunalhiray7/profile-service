@@ -22,3 +22,8 @@ management:
       enabled: true
     git:
       mode: full
+
+mongo:
+  database:
+    name: coffeewithme
+    host: 127.0.0.1:27017
