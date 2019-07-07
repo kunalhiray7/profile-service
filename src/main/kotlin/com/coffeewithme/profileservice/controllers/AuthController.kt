@@ -3,12 +3,10 @@ package com.coffeewithme.profileservice.controllers
 import com.coffeewithme.profileservice.domain.Profile
 import com.coffeewithme.profileservice.dtos.AuthRequest
 import com.coffeewithme.profileservice.services.ProfileService
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import javax.validation.Valid
 
+@CrossOrigin
 @RestController
 @RequestMapping("/authentications")
 class AuthController(val profileService: ProfileService) {

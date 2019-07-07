@@ -4,6 +4,11 @@ spring:
   data:
     mongodb:
       uri: mongodb://127.0.0.1:27017/coffeewithme
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
 
 # Actuator
 management:

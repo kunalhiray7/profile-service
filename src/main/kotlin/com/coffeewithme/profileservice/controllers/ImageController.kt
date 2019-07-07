@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.util.UriComponentsBuilder
 import java.util.*
 
-
+@CrossOrigin(exposedHeaders = ["Location"])
 @RestController
 @RequestMapping("/images")
 class ImageController(private val imageService: ImageService) {
