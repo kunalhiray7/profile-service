@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDate
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
+import javax.validation.constraints.Size
 
 @Document(collection = "profiles")
 data class Profile(
@@ -16,9 +17,11 @@ data class Profile(
         val email: String = "",
 
         @get: NotBlank
+        @get: Size(min = 1, max = 256)
         val realName: String = "",
 
         @get: NotBlank
+        @get: Size(min = 1, max = 256)
         val displayName: String = "",
 
         @get: NotNull
@@ -40,8 +43,10 @@ data class Profile(
 
         val figure: String = "",
 
+        @get: Size(min = 0, max = 256)
         val occupation: String = "",
 
+        @get: Size(min = 0, max = 5000)
         val aboutMe: String = "",
 
         @get: NotBlank
