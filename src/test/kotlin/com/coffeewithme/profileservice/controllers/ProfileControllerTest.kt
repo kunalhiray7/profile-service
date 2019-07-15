@@ -231,4 +231,55 @@ internal class ProfileControllerTest {
         verifyNoMoreInteractions(profileService)
     }
 
+    @Test
+    fun `GET all should return all profiles`() {
+        // given
+        val profile1 = Profile(
+                id = "5d1e4a25ba52df864cc09028",
+                email = "john.smith@gmail.com",
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val profile2 = Profile(
+                id = "5d1e4a25ba52df864cc09029",
+                email = "john.smith1@gmail.com",
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val profiles = listOf(profile1, profile2)
+        doReturn(profiles).`when`(profileService).getAll()
+
+        // when
+        mockMvc.perform(get("/profiles"))
+                .andExpect(status().isOk)
+                .andExpect(content().string(mapper.writeValueAsString(profiles)))
+
+        verify(profileService, times(1)).getAll()
+        verifyNoMoreInteractions(profileService)
+    }
+
 }

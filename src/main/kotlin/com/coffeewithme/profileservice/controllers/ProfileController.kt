@@ -23,4 +23,7 @@ class ProfileController(val profileService: ProfileService) {
     fun update(@PathVariable("id") id: String, @RequestBody patchRequest: String): Profile {
         return profileService.update(patchRequest, id)
     }
+
+    @GetMapping
+    fun getAll() = profileService.getAll()
 }

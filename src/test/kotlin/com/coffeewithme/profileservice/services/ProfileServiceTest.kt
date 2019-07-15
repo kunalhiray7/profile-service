@@ -319,4 +319,55 @@ internal class ProfileServiceTest {
         verify(jsonPatcher, times(1)).patch(patchRequest, profile)
         verifyNoMoreInteractions(profileRepository)
     }
+
+    @Test
+    fun `getAll() should return all the profiles`() {
+        // given
+        val profile1 = Profile(
+                id = "12345rtyuihjk",
+                email = "john.smith@gmail.com",
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val profile2 = Profile(
+                id = "12345rtyuihjk",
+                email = "john.smith@gmail.com",
+                realName = "John Smith",
+                displayName = "John",
+                gender = Gender.MALE,
+                dateOfBirth = LocalDate.now(),
+                maritalStatus = "Single",
+                profilePic = "http://123.png",
+                ethnicity = "Asian",
+                religion = "Christian",
+                height = 173,
+                figure = "Normal",
+                occupation = "Banker",
+                aboutMe = "Banker by profession, musician by passion",
+                city = "Berlin",
+                location = GeoJsonPoint(52.46510, 13.39630)
+        )
+        val profiles = listOf(profile1, profile2)
+        doReturn(profiles).`when`(profileRepository).findAll()
+
+        // when
+        val result = profileService.getAll()
+
+        // then
+        assertEquals(profiles, result)
+        verify(profileRepository, times(1)).findAll()
+        verifyNoMoreInteractions(profileRepository)
+    }
 }

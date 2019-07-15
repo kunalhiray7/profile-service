@@ -37,6 +37,8 @@ class ProfileService(private val profileRepository: ProfileRepository, private v
         return profileRepository.save(updatedProfile)
     }
 
+    fun getAll(): List<Profile> = profileRepository.findAll()
+
     private fun checkAllowedOperations(updatedProfile: Profile, existingProfile: Profile) {
         when(updatedProfile.id != existingProfile.id
                 || updatedProfile.email != existingProfile.email
@@ -46,14 +48,14 @@ class ProfileService(private val profileRepository: ProfileRepository, private v
         }
     }
 
-    private fun getOrThrowNotFound(id: String): Profile {
-        return profileRepository.findById(id).orElseThrow { ProfileNotFoundException("Profile with id $id does not exist.") }
-    }
-
     private fun validateProfile(profileRequest: ProfileRequest) {
         val potentialProfile = profileRepository.findByEmail(profileRequest.email)
         if (potentialProfile != null) {
             throw ProfileAlreadyExistsException("Profile with email ${profileRequest.email} already exists.")
         }
+    }
+
+    private fun getOrThrowNotFound(id: String): Profile {
+        return profileRepository.findById(id).orElseThrow { ProfileNotFoundException("Profile with id $id does not exist.") }
     }
 }
